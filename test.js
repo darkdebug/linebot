@@ -1,6 +1,7 @@
 var request = require("request");
 var express = require('express');
 var lsm = require('@line/bot-sdk');
+var Client = require('@line/bot-sdk').Client;
 var httpport = 5555;
 var app = express();
 var router = express.Router();
@@ -19,10 +20,11 @@ var initList =function (){
 initList();
 
 router.get("/test/:id/:data",function(req, res, next){
-	var id = (req.params.id==='aaa')?"Uc82849d5b1fad23dd0020f702b35b780":req.params.id;
+	var id = req.params.id;
 	//console.log(id);
 	var data = req.params.data||"test";
 	var botAccessKey = 'c3rDT3bkhmht0qKe9QDMDNOpzQQxduE6/Wt8rYsPAcd+rHCV0kkmdCdbx6pyKMoW2VuhpIe1jybYaoASQtkGsJhWMmXe4BeQMLhk7dp7jkVbnSAXTbOCRk98DHBFc6DSkZm7TtsMjvKQGifoHiNFqgdB04t89/1O/w1cDnyilFU=';
+	var serviceUrl = "";
 	request({
 		headers :{
 			'Content-Type': 'application/json; charset=UTF-8',
@@ -106,6 +108,35 @@ router.get('/getGroupList', function(req, res){
 		datas : groupList
 	};
 	res.send(JSON.stringify(resultData));
+});
+
+var client = new Client(lineConfig);
+router.get('/send/:id/:data', function(req, res){
+	if (req.params.id==1){
+		//one man with text
+		client.pushMessage(userList[0],{type:'text',text:(req.params.data||"test")});
+	} else if (req.params.id==2){
+		//one group with text
+		client.pushMessage(groupList[0],{type:'text',text:(req.params.data||"test")});
+	} /*else if (req.params.id==3){
+		//one man with image
+		client.pushMessage(userList[0],{type:'image',riginalContentUrl:'https://imgur.com/fimxEbi',previewImageUrl:'https://imgur.com/twDNXL9'})
+		.catch(function(error){
+			console.log(JSON.stringify(error));
+		});
+	}*/ else if (req.params.id==4){
+		//multi data with text
+		//all user
+		client.multicast(userList,{type:'text',text:(req.params.data||"test group")})
+		.catch(function(error){
+			console.log(JSON.stringify(error));
+		});
+		//all group, room
+		for(var i=0;i<groupList.length;i++){
+			client.pushMessage(groupList[i],{type:'text',text:(req.params.data||"test")});
+		}
+	}
+	res.send("type:"+req.params.id+"<br>data:"+req.params.data);
 });
 app.use("/",router);
 app.listen(process.env.PORT || httpport);
